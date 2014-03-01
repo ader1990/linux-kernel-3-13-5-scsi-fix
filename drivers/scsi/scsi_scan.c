@@ -1316,6 +1316,7 @@ static int scsi_report_lun_scan(struct scsi_target *starget, int bflags,
 	unsigned int lun;
 	unsigned int num_luns;
 	unsigned int retries;
+	int w_lun = SCSI_W_LUN_REPORT_LUNS;
 	int result;
 	struct scsi_lun *lunp, *lun_data;
 	u8 *data;
@@ -1342,11 +1343,20 @@ static int scsi_report_lun_scan(struct scsi_target *starget, int bflags,
 		return 0;
 	if (starget->no_report_luns)
 		return 1;
+	if (bflags & BLIST_NO_WLUN)
+		w_lun = 0;
 
+retry_report_lun_scan:
 	if (!(sdev = scsi_device_lookup_by_target(starget, 0))) {
-		sdev = scsi_alloc_sdev(starget, 0, NULL);
-		if (!sdev)
-			return 0;
+		sdev = scsi_alloc_sdev(starget, w_lun, NULL);
+		if (!sdev) {
+			if (w_lun != 0) {
+				w_lun = 0;
+				sdev = scsi_alloc_sdev(starget, w_lun, NULL);
+			}
+			if (!sdev)
+				return 0;
+		}
 		if (scsi_device_get(sdev)) {
 			__scsi_remove_device(sdev);
 			return 0;
@@ -1423,6 +1433,18 @@ static int scsi_report_lun_scan(struct scsi_target *starget, int bflags,
 	}
 
 	if (result) {
+		if (w_lun != 0 && scsi_device_created(sdev)) {
+			/*
+			 * W_LUN probably not supported, try with LUN 0
+			 */
+			SCSI_LOG_SCAN_BUS(3, printk (KERN_INFO "scsi scan:"
+					"W_LUN not supported, try LUN 0\n"));
+			kfree(lun_data);
+			scsi_device_put(sdev);
+			__scsi_remove_device(sdev);
+			w_lun = 0;
+			goto retry_report_lun_scan;
+		}	
 		/*
 		 * The device probably does not support a REPORT LUN command
 		 */
