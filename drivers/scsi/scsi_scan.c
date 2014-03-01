@@ -1349,9 +1349,11 @@ static int scsi_report_lun_scan(struct scsi_target *starget, int bflags,
 retry_report_lun_scan:
 	if (!(sdev = scsi_device_lookup_by_target(starget, 0))) {
 		sdev = scsi_alloc_sdev(starget, w_lun, NULL);
+		printk(KERN_INFO "scsi scan: for w_lun %d \n", w_lun);
 		if (!sdev) {
 			if (w_lun != 0) {
 				w_lun = 0;
+				printk(KERN_INFO "scsi scan: failed for w_lun %d \n", w_lun);
 				sdev = scsi_alloc_sdev(starget, w_lun, NULL);
 			}
 			if (!sdev)
