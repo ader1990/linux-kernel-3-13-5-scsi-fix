@@ -684,6 +684,8 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 	if (sdev->inquiry_len < 36) {
 		printk(KERN_INFO "scsi scan: INQUIRY result too short (%d),"
 				" using 36\n", sdev->inquiry_len);
+		printk(KERN_INFO "scsi scan: ADERIAN INQUIRY result too short (%d),"
+				" using 36\n", sdev->inquiry_len);
 		sdev->inquiry_len = 36;
 	}
 
@@ -1624,8 +1626,8 @@ static void __scsi_scan_target(struct device *parent, unsigned int channel,
 	 * would not configure LUN 0 until all LUNs are scanned.
 	 */
 	res = scsi_probe_and_add_lun(starget, 0, &bflags, NULL, rescan, NULL);
-	if (res == SCSI_SCAN_LUN_PRESENT || res == SCSI_SCAN_TARGET_PRESENT) {
-		if (scsi_report_lun_scan(starget, bflags, rescan) != 0)
+	if (true || res == SCSI_SCAN_LUN_PRESENT || res == SCSI_SCAN_TARGET_PRESENT) {
+		if (scsi_report_lun_scan(starget, bflags, rescan) != 0 || true)
 			/*
 			 * The REPORT LUN did not scan the target,
 			 * do a sequential scan.
